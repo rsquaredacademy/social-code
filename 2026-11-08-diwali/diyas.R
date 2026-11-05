@@ -43,10 +43,19 @@ oils <- do.call(rbind, lapply(seq_along(xs), function(i) {
 wicks <- data.frame(x = xs, xend = xs + 0.4, y = y_diya + 0.5, yend = y_diya + 4.5)
 
 # Flame layers: glow, outer (#FF7A00), inner core (#FFC93C)
-glow_df <- do.call(rbind, lapply(seq_along(xs), function(i) flame_poly(xs[i], y_diya + 2.5, 4.8, 30.0, i, "glow")))
-out_df  <- do.call(rbind, lapply(seq_along(xs), function(i) flame_poly(xs[i], y_diya + 3.8, 3.2, 24.0, i, "out")))
-in_df   <- do.call(rbind, lapply(seq_along(xs), function(i) flame_poly(xs[i], y_diya + 4.8, 1.6, 14.0, i, "in")))
-flames_all <- rbind(glow_df, out_df, in_df)
+# flicker: one height factor per diya (1 = still flame)
+make_flames <- function(f = rep(1, length(xs))) {
+  glow <- do.call(rbind, lapply(seq_along(xs), function(i) {
+    th <- seq(0, 2 * pi, length.out = 60)
+    do.call(rbind, lapply(1:3, function(r) data.frame(
+      x = xs[i] + (2.5 + 1.5 * r) * cos(th), y = y_diya + 13 * f[i] + (7 + 3 * r) * sin(th),
+      id = i * 10 + r, part = "glow", diya = i)))
+  }))
+  out <- do.call(rbind, lapply(seq_along(xs), function(i) cbind(flame_poly(xs[i], y_diya + 3.8, 3.2, 24.0 * f[i], i, "out"), diya = i)))
+  inn <- do.call(rbind, lapply(seq_along(xs), function(i) cbind(flame_poly(xs[i], y_diya + 4.8, 1.6, 14.0 * f[i], i, "in"), diya = i)))
+  rbind(glow, out, inn)
+}
+flames_all <- make_flames()
 
 # Sparkles in the night sky
 sparkles <- data.frame(
@@ -64,14 +73,15 @@ theme_diya <- theme_void() +
 
 # --- Plotting function (<= 25 lines) -----------------------------------------
 
-diya_plot <- function(lit = 5, title = "Happy Diwali", caption = "Made with R · Rsquared Academy") {
+diya_plot <- function(lit = 5, title = "Happy Diwali", caption = "Made with R · Rsquared Academy",
+                      flames = flames_all) {
   k <- if (length(lit) == 1) lit else max(lit)
-  fl <- if (k > 0) flames_all[flames_all$id <= k, ] else flames_all[0, ]
+  fl <- flames[flames$diya <= k, ]
   p <- ggplot() +
     geom_point(data = sparkles, aes(x, y, size = s, shape = factor(sh)),
                colour = "#FDE68A", alpha = 0.85, show.legend = FALSE) +
     scale_size_identity() + scale_shape_manual(values = c("16" = 16, "8" = 8)) +
-    geom_polygon(data = fl[fl$part == "glow", ], aes(x, y, group = id), fill = "#FFAA00", alpha = 0.18) +
+    geom_polygon(data = fl[fl$part == "glow", ], aes(x, y, group = id), fill = "#FFC93C", alpha = 0.09) +
     geom_polygon(data = bowls, aes(x, y, group = id), fill = "#B5562E") +
     geom_polygon(data = rims,  aes(x, y, group = id), fill = "#7C2D12") +
     geom_polygon(data = oils,  aes(x, y, group = id), fill = "#541B08") +
