@@ -1,5 +1,5 @@
 # Diwali (Festival of Lights): row of 5 diyas (oil lamps) drawn in ggplot2
-# Decktale GIF animation frames and final social graphic
+# Frames for a looping GIF (assembled with ffmpeg in make-gif.R) and the final still
 # Rsquared Academy, 2026
 # install.packages(c("ggplot2", "ragg"))
 
